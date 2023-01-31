@@ -1,0 +1,119 @@
+---
+title: "Neighbourhood Plan Overview"
+scctemplate:
+  header:
+    site_branding: "Suffolk County Council"
+  navigation:
+    breadcrumb_trail:
+      - href: "index.html"
+        text: "Neighbourhood Planning Home"
+toc: false
+---
+
+```{r setup, include = FALSE}
+library(httr)
+library(XML)
+library(dplyr)
+library(rvest)
+library(leaflet)
+library(stringr)
+library(here)
+library(sf)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(mapview)
+library(leafem)
+library(leaflet.extras)
+library(htmlwidgets)
+library(htmltools)
+
+knitr::opts_chunk$set(echo = TRUE)
+
+# Instructions:
+# All you need to edit here is:
+  # - The title of your website
+  # - The index, make sure you reference all of your pages
+  # - OPTIONAL: add an author: or authors: section.
+  # - OPTIONAL: add seo descriptions.
+```
+
+An overview of which Parishes have completed/submitted neighbourhood plans.
+
+```{r map, echo = FALSE, warning = FALSE, message = FALSE, out.width = "100%", fig.align='center'}
+nps <- st_read("Data\\PAR_DEC_2022_EW_BGC.shp", quiet = TRUE)
+
+lkup <- read.csv("Data\\parish_lkup.csv")
+
+lads <- c(
+  "West Suffolk",
+  "East Suffolk",
+  "Mid Suffolk",
+  "Babergh",
+  "Breckland",
+  "South Norfolk",
+  "King's Lynn and West Norfolk",
+  "East Cambridgeshire",
+  "South Cambridgeshire",
+  "Colchester",
+  "Braintree",
+  "Broadland",
+  "Great Yarmouth",
+  "Tendring"
+)
+
+lkup <- lkup |> 
+  filter(LAD22NM %in% lads)
+
+nps <- nps |> 
+  filter(PAR22CD %in% lkup$ï..PAR22CD)
+
+nps <- st_transform(nps, 4326)
+
+par_label <- sprintf(
+  "<strong>%s</strong><br/>",
+  nps$PAR22NM
+) %>% lapply(htmltools::HTML)
+
+
+nps_map <- leaflet() |> 
+  addTiles(group = "Topo") |> 
+  addPolygons(
+    data = nps,
+    group = "Parish",
+    color = "black",
+    opacity = 1,
+    weight = 2,
+    fillColor = "#2d6ca2",
+    fillOpacity = 0.2,
+    highlightOptions = highlightOptions(
+      color = "white",
+      weight = 4,
+      fill = "#666",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    ),
+    label = par_label,
+    labelOptions = labelOptions(
+      style = list("font-weigth" = "normal", padding = "3px 8px"),
+      textsize = "20px",
+      direction = "auto"
+    ),
+  ) |> 
+  addLayersControl(
+    data = nps,
+    overlayGroups = c(
+      "Parish"
+    ),
+    position = "bottomright"
+  ) |> 
+  addSearchFeatures(
+    targetGroups = c("Parish", nps$PAR22NM),
+    options = searchFeaturesOptions(
+      hideMarkerOnCollapse = TRUE,
+      zoom = 12
+    )) |> 
+  addFullscreenControl()
+
+nps_map
+```
