@@ -27,6 +27,7 @@ library(leafem)
 library(leaflet.extras)
 library(htmlwidgets)
 library(htmltools)
+source("get_nps_progress.R")
 
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -68,13 +69,36 @@ lkup <- lkup |>
 nps <- nps |> 
   filter(PAR22CD %in% lkup$ï..PAR22CD)
 
+# Combine with nps progress
+nps_progress <- get_nps_progress(nps_data)
+
+test <- anti_join(nps_progress, nps, by = c("qualifing_body" = "PAR22NM"))
+
+nps <- left_join(nps, nps_progress, by = c("PAR22NM" = "qualifing_body"))
+
+hexes <- data.frame(
+  progress = c(
+    "adopted",
+    "in progress",
+    "not started/no info"
+  ),
+  hex = c(
+    "#00703c",
+    "#e8850c",
+    "#e2eefa"
+  )
+)
+
+nps$progress[is.na(nps$progress)] <- "not started/no info"
+
+nps <- left_join(nps, hexes, by = "progress")
+
 nps <- st_transform(nps, 4326)
 
 par_label <- sprintf(
-  "<strong>%s</strong><br/>",
-  nps$PAR22NM
+  "<strong>%s</strong><br/>%s",
+  nps$PAR22NM, nps$progress
 ) %>% lapply(htmltools::HTML)
-
 
 nps_map <- leaflet() |> 
   addTiles(group = "Topo") |> 
@@ -84,13 +108,13 @@ nps_map <- leaflet() |>
     color = "black",
     opacity = 1,
     weight = 2,
-    fillColor = "#2d6ca2",
-    fillOpacity = 0.2,
+    fillColor = nps$hex,
+    fillOpacity = 0.7,
     highlightOptions = highlightOptions(
       color = "white",
       weight = 4,
       fill = "#666",
-      fillOpacity = 0.7,
+      fillOpacity = 0.9,
       bringToFront = TRUE
     ),
     label = par_label,
