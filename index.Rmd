@@ -72,6 +72,22 @@ nps <- nps |>
 # Combine with nps progress
 nps_progress <- get_nps_progress(nps_data)
 
+# Collection of tidying names
+nps$PAR22NM <- gsub("Campsey Ash", "Campsea Ashe", nps$PAR22NM)
+nps$PAR22NM <- gsub("Campsey Ash", "Campsea Ashe", nps$PAR22NM)
+nps$PAR22NM <- gsub("Walsham\\-le\\-Willows", "Walsham Le Willows", nps$PAR22NM)
+nps$PAR22NM <- gsub("Stoke\\-by\\-Nayland", "Stoke by Nayland", nps$PAR22NM)
+
+nps_progress$qualifing_body <- gsub("Beccles \\(reviewed \\- Beccles parish only\\)", "Beccles", nps_progress$qualifing_body)
+nps_progress$qualifing_body <- gsub("Oulton Broad \\(superceded\\)", "Oulton Broad", nps_progress$qualifing_body)
+nps_progress$qualifing_body <- gsub("Rushmere St Andrew", "Rushmere St. Andrew", nps_progress$qualifing_body)
+nps_progress$qualifing_body <- gsub("Trimley St Mary", "Trimley St. Mary", nps_progress$qualifing_body)
+nps_progress$qualifing_body <- gsub("Capel St Mary", "Capel St. Mary", nps_progress$qualifing_body)
+nps_progress$qualifing_body <- gsub("Great Walding Field", "Great Waldingfield", nps_progress$qualifing_body)
+
+nps_progress$qualifing_body <- gsub("Henstead with Hulver St", "Henstead with Hulver Street", nps_progress$qualifing_body)
+nps_progress$qualifing_body <- gsub("Wenhaston with Mellis Hamlet", "Wenhaston with Mells Hamlet", nps_progress$qualifing_body)
+
 test <- anti_join(nps_progress, nps, by = c("qualifing_body" = "PAR22NM"))
 
 nps <- left_join(nps, nps_progress, by = c("PAR22NM" = "qualifing_body"))
