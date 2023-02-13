@@ -82,6 +82,7 @@ nps$PAR22NM <- gsub("Campsey Ash", "Campsea Ashe", nps$PAR22NM)
 nps$PAR22NM <- gsub("Walsham\\-le\\-Willows", "Walsham Le Willows", nps$PAR22NM)
 nps$PAR22NM <- gsub("Stoke\\-by\\-Nayland", "Stoke by Nayland", nps$PAR22NM)
 
+
 # Collection of tidying names
 nps_progress$qualifing_body <- gsub("Beccles \\(reviewed \\- Beccles parish only\\)", "Beccles", nps_progress$qualifing_body)
 nps_progress$qualifing_body <- gsub("Oulton Broad \\(superceded\\)", "Oulton Broad", nps_progress$qualifing_body)
@@ -99,6 +100,7 @@ nps <- left_join(nps, nps_progress, by = c("PAR22NM" = "qualifing_body"))
 nps$url_name <- tolower(nps$PAR22NM)
 
 nps$url_name <- gsub(" ", "-", nps$url_name)
+nps$url_name <- gsub("st\\.", "st", nps$url_name)
 
 nps_list <- lapply(unique(nps$LAD22NM), function(i) {
   
