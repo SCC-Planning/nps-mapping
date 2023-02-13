@@ -69,15 +69,20 @@ lkup <- lkup |>
 nps <- nps |> 
   filter(PAR22CD %in% lkup$ï..PAR22CD)
 
+lkup <- lkup |> 
+  select(PAR22CD = ï..PAR22CD, LAD22NM, LAD22CD)
+
+nps <- left_join(nps, lkup, by = "PAR22CD")
+
 # Combine with nps progress
 nps_progress <- get_nps_progress(nps_data)
 
-# Collection of tidying names
 nps$PAR22NM <- gsub("Campsey Ash", "Campsea Ashe", nps$PAR22NM)
 nps$PAR22NM <- gsub("Campsey Ash", "Campsea Ashe", nps$PAR22NM)
 nps$PAR22NM <- gsub("Walsham\\-le\\-Willows", "Walsham Le Willows", nps$PAR22NM)
 nps$PAR22NM <- gsub("Stoke\\-by\\-Nayland", "Stoke by Nayland", nps$PAR22NM)
 
+# Collection of tidying names
 nps_progress$qualifing_body <- gsub("Beccles \\(reviewed \\- Beccles parish only\\)", "Beccles", nps_progress$qualifing_body)
 nps_progress$qualifing_body <- gsub("Oulton Broad \\(superceded\\)", "Oulton Broad", nps_progress$qualifing_body)
 nps_progress$qualifing_body <- gsub("Rushmere St Andrew", "Rushmere St. Andrew", nps_progress$qualifing_body)
@@ -88,9 +93,41 @@ nps_progress$qualifing_body <- gsub("Great Walding Field", "Great Waldingfield",
 nps_progress$qualifing_body <- gsub("Henstead with Hulver St", "Henstead with Hulver Street", nps_progress$qualifing_body)
 nps_progress$qualifing_body <- gsub("Wenhaston with Mellis Hamlet", "Wenhaston with Mells Hamlet", nps_progress$qualifing_body)
 
-test <- anti_join(nps_progress, nps, by = c("qualifing_body" = "PAR22NM"))
-
 nps <- left_join(nps, nps_progress, by = c("PAR22NM" = "qualifing_body"))
+
+# Creating URL for each neighbourhood plan, depends on the district
+nps$url_name <- tolower(nps$PAR22NM)
+
+nps$url_name <- gsub(" ", "-", nps$url_name)
+
+nps_list <- lapply(unique(nps$LAD22NM), function(i) {
+  
+  ld <- nps |> 
+    filter(LAD22NM == i)
+  
+  if(i == "East Suffolk") {
+    ld$url <- paste0(
+      "https://www.eastsuffolk.gov.uk/planning/neighbourhood-planning/neighbourhood-plans-in-the-area/", ld$url_name, "-neighbourhood-area/"
+    )
+  } else if(i == "West Suffolk") {
+    ld$url <- paste0(
+      "https://www.westsuffolk.gov.uk/planning/Planning_Policies/neighbourhood-planning/neighbourhood-planning-in-", ld$url_name, ".cfm"
+    )
+  } else if (i == "Mid Suffolk") {
+    ld$url <- paste0(
+      "https://www.midsuffolk.gov.uk/planning/neighbourhood-planning/neighbourhood-planning-in-mid-suffolk/", ld$url_name, "-neighbourhood-plan/"
+    )
+  } else if (i == "Babergh") {
+    ld$url <- paste0(
+      "https://www.midsuffolk.gov.uk/planning/neighbourhood-planning/neighbourhood-planning-in-babergh/", ld$url_name, "-neighbourhood-plan/"
+    )
+  }
+  
+  return(ld)
+  
+})
+
+nps <- bind_rows(nps_list)
 
 hexes <- data.frame(
   progress = c(
@@ -112,8 +149,13 @@ nps <- left_join(nps, hexes, by = "progress")
 nps <- st_transform(nps, 4326)
 
 par_label <- sprintf(
-  "<strong>%s</strong><br/>%s",
+  "<strong>%s</strong><br/>%s<br/> Click for more information.",
   nps$PAR22NM, nps$progress
+) %>% lapply(htmltools::HTML)
+
+par_popup <- sprintf(
+  "<strong>%s</strong><br/>Click <strong><a href = %s>here</a></strong> for the latest information on this Neighbourhood Plan<br/>",
+  nps$PAR22NM, nps$url
 ) %>% lapply(htmltools::HTML)
 
 nps_map <- leaflet() |> 
@@ -139,6 +181,12 @@ nps_map <- leaflet() |>
       textsize = "20px",
       direction = "auto"
     ),
+    popup = par_popup,
+    popupOptions = popupOptions(
+      style = list("font-weigth" = "normal", padding = "3px 8px"),
+      textsize = "20px",
+      direction = "auto"
+    )
   ) |> 
   addLayersControl(
     data = nps,
@@ -154,6 +202,7 @@ nps_map <- leaflet() |>
       zoom = 12
     )) |> 
   addFullscreenControl()
+
 
 nps_map
 ```
