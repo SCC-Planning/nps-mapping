@@ -35,7 +35,7 @@ checklist <- lapply(nps_long$qualifing_body, function(x) {
   parish <- nps_long |> 
     filter(qualifing_body == x)
   
-  if (parish$status %in% c("referendum_reg_19_and_20")) {
+  if ("referendum_reg_19_and_20" %in% parish$status) {
     parish$progress <- "adopted"
   } else {
     parish$progress <- "in progress"
@@ -56,3 +56,4 @@ nps_not_started <- nps_all |>
 
 return(nps_progress)
 } 
+
