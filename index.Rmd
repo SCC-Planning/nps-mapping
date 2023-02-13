@@ -50,17 +50,17 @@ lads <- c(
   "West Suffolk",
   "East Suffolk",
   "Mid Suffolk",
-  "Babergh",
-  "Breckland",
-  "South Norfolk",
-  "King's Lynn and West Norfolk",
-  "East Cambridgeshire",
-  "South Cambridgeshire",
-  "Colchester",
-  "Braintree",
-  "Broadland",
-  "Great Yarmouth",
-  "Tendring"
+  "Babergh"
+  # "Breckland",
+  # "South Norfolk",
+  # "King's Lynn and West Norfolk",
+  # "East Cambridgeshire",
+  # "South Cambridgeshire",
+  # "Colchester",
+  # "Braintree",
+  # "Broadland",
+  # "Great Yarmouth",
+  # "Tendring"
 )
 
 lkup <- lkup |> 
