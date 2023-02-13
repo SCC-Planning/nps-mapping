@@ -1,6 +1,7 @@
 library(readxl)
 library(tidyr)
 library(dplyr)
+library(stringr)
 
 filename <- "Data/Suffolk wide Neighbourhood Plan Progress.xlsx"
 
@@ -29,6 +30,12 @@ nps_all <- pivot_longer(
 
 nps_long <- nps_all |> 
   dplyr::filter(!is.na(value))
+
+# Remove no votes
+nps_long <- nps_long |> 
+  filter(
+    !str_detect(value, "NO VOTE")
+    )
 
 checklist <- lapply(nps_long$qualifing_body, function(x) {
   
