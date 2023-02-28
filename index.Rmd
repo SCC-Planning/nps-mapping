@@ -44,12 +44,17 @@ An overview of which Parishes have completed/submitted neighbourhood plans.
 ```{r map, echo = FALSE, warning = FALSE, message = FALSE, out.width = "100%", fig.align='center'}
 nps <- st_read("Data\\PAR_DEC_2022_EW_BGC.shp", quiet = TRUE)
 
+district <- st_read("Data\\LAD_DEC_2022_UK_BFC.shp", quiet = TRUE)
+
 lkup <- read.csv("Data\\parish_lkup.csv")
 
 lads <- c(
   "West Suffolk",
   "East Suffolk",
   "Mid Suffolk",
+  "Ipswich",
+  "Cambridge",
+  "Norwich",
   "Babergh",
   "Breckland",
   "South Norfolk",
@@ -63,6 +68,9 @@ lads <- c(
   "Tendring"
 )
 
+district <- district |> 
+  filter(LAD22NM %in% lads)
+
 lkup <- lkup |> 
   filter(LAD22NM %in% lads)
 
@@ -74,6 +82,14 @@ lkup <- lkup |>
 
 nps <- left_join(nps, lkup, by = "PAR22CD")
 
+test <- nps |> 
+  filter(PAR22NM == "Easton")
+
+nps$PAR22NM[nps$PAR22CD == "E04006240"] <- "Oulton, Norfolk"
+nps$PAR22NM[nps$PAR22CD == "E04001828"] <- "Newton, South Cambridgeshire"
+nps$PAR22NM[nps$PAR22CD == "E04003979"] <- "Aldham, Colchester"
+nps$PAR22NM[nps$PAR22CD == "E04006542"] <- "Easton, South Norfolk"
+
 # Combine with nps progress
 nps_progress <- get_nps_progress(nps_data)
 
@@ -81,7 +97,6 @@ nps$PAR22NM <- gsub("Campsey Ash", "Campsea Ashe", nps$PAR22NM)
 nps$PAR22NM <- gsub("Campsey Ash", "Campsea Ashe", nps$PAR22NM)
 nps$PAR22NM <- gsub("Walsham\\-le\\-Willows", "Walsham Le Willows", nps$PAR22NM)
 nps$PAR22NM <- gsub("Stoke\\-by\\-Nayland", "Stoke by Nayland", nps$PAR22NM)
-
 
 # Collection of tidying names
 nps_progress$qualifing_body <- gsub("Beccles \\(reviewed \\- Beccles parish only\\)", "Beccles", nps_progress$qualifing_body)
@@ -93,11 +108,6 @@ nps_progress$qualifing_body <- gsub("Great Walding Field", "Great Waldingfield",
 
 nps_progress$qualifing_body <- gsub("Henstead with Hulver St", "Henstead with Hulver Street", nps_progress$qualifing_body)
 nps_progress$qualifing_body <- gsub("Wenhaston with Mellis Hamlet", "Wenhaston with Mells Hamlet", nps_progress$qualifing_body)
-
-nps$PAR22NM[nps$PAR22CD == "E04006240"] <- "Oulton, Norfolk"
-nps$PAR22NM[nps$PAR22CD == "E04001828"] <- "Newton, South Cambridgeshire"
-nps$PAR22NM[nps$PAR22CD == "E04003979"] <- "Aldham, Colchester"
-nps$PAR22NM[nps$PAR22CD == "E04006542"] <- "Easton, South Norfolk"
 
 nps <- left_join(nps, nps_progress, by = c("PAR22NM" = "qualifing_body"))
 
@@ -154,6 +164,7 @@ nps$progress[is.na(nps$progress)] <- "not started/no info"
 nps <- left_join(nps, hexes, by = "progress")
 
 nps <- st_transform(nps, 4326)
+district <- st_transform(district, 4326)
 
 par_label <- sprintf(
   "<strong>%s</strong><br/>%s<br/> Click for more information.",
@@ -163,6 +174,11 @@ par_label <- sprintf(
 par_popup <- sprintf(
   "<strong>%s</strong><br/>Click <strong><a href = %s>here</a></strong> for the latest information on this Neighbourhood Plan<br/>",
   nps$PAR22NM, nps$url
+) %>% lapply(htmltools::HTML)
+
+district_label <- sprintf(
+  "<strong>%s</strong>",
+  district$LAD22NM
 ) %>% lapply(htmltools::HTML)
 
 nps_map <- leaflet() |> 
@@ -195,21 +211,50 @@ nps_map <- leaflet() |>
       direction = "auto"
     )
   ) |> 
+  addPolygons(
+    data = district,
+    group = "District",
+    color = "black",
+    opacity = 1,
+    weight = 2,
+    fillColor = "#2d6ca2",
+    fillOpacity = 0.7,
+    highlightOptions = highlightOptions(
+      color = "white",
+      weight = 4,
+      fill = "#666",
+      fillOpacity = 0.9,
+      bringToFront = TRUE
+    ),
+    label = district_label,
+    labelOptions = labelOptions(
+      style = list("font-weigth" = "normal", padding = "3px 8px"),
+      textsize = "20px",
+      direction = "auto"
+    )
+  ) |>  
   addLayersControl(
     data = nps,
     overlayGroups = c(
-      "Parish"
+      "Parish", "District"
     ),
     position = "bottomright"
   ) |> 
   addSearchFeatures(
-    targetGroups = c("Parish", nps$PAR22NM),
+    targetGroups = c("Parish", nps$PAR22NM, "District", district$LAD22NM),
     options = searchFeaturesOptions(
       hideMarkerOnCollapse = TRUE,
       zoom = 12
     )) |> 
+  hideGroup("District") |> 
   addFullscreenControl()
 
+htmlwidgets::saveWidget(nps_map, "nps_map.html")
 
-nps_map
+htmltools::tags$iframe(
+  src = "nps_map.html",
+  width = "100%",
+  style="height: 75vh;",
+  scrolling = "no"
+)
 ```
